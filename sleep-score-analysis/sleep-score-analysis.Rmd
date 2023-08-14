@@ -1,0 +1,520 @@
+---
+title: "Report title"
+subtitle: "Subtitle that indicates findings"
+author: "Report prepared for MINGAR by R3M"
+date: 2022-04-07
+lang: "en"
+output:
+  pdf_document:
+    template: report.tex
+    toc: true
+    toc_depth: 2
+titlepage: true
+titlepage-color: "6C3082"
+titlepage-text-color: "FFFFFF"
+titlepage-rule-color: "FFFFFF"
+titlepage-rule-height: 2
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+library(lme4)
+library(lmtest)
+library(MASS)
+
+
+
+
+# this should suppress all code and messages
+knitr::opts_chunk$set(include=FALSE)
+```
+
+```{r, include=FALSE}
+
+#read in data sets from data folder
+cust_dev4 <- as.data.frame(readRDS("data/cust_dev4.Rds"))
+cust_dev5 <- as.data.frame(readRDS("data/cust_dev5.Rds"))
+cust_dev3 <- as.data.frame(readRDS("data/cust_dev3.Rds"))
+cust_sleep3 <- as.data.frame(readRDS("data/cust_sleep3.Rds"))
+
+
+```
+
+\newpage
+
+# Executive summary
+
+_Guidelines for the executive summary:_
+
+* _No more than two pages_
+* _Language is appropriate for a non-technical audience_
+* _Bullet points are used where appropriate_
+*	_A small number of key visualizations and/or tables are included_
+*	_All research questions are addressed_
+
+
+_The [module 4 writing prompt](https://sta303-bolton.github.io/sta303-w22-courseguide/knowledge-basket-writing-and-peer-feedback.html#module-4-writing-task) provides some tips and information about writing executive summaries._
+
+
+\newpage
+# Technical report
+
+
+
+## Introduction
+
+The technical report will consist of two sections each of which will cover some research questions that will serve to answer our clients needs. The first section will analyze the differences in the type of customers between new affordable device lines and the more traditional device lines. It will also discuss the possibility on whether the newer devices are attracting more customers outside the traditional customer base. The second section will investigate the issue on poor device performance for dark skin toned users and if there exists any potential racial biases that affect their sleep scores. It will also explore if this problem remains the same when we include other factors such as the sex of the user or the device type they use. 
+
+In all cases, we will thoroughly present and describe the suitableness of the statistical methods used to tackle each research question. Further, we will present any statistical results produced from our exploratory data analysis and model summaries of coefficient values, and confidence intervals of p-values. At the end we will provide a conclusion to our clients needs while also discussing the limitations and improvements to strengthen future analyses.
+
+### Research questions
+
+- What are the differences between traditional and non traditional customers?
+
+- Do non-traditional customers come outside of traditional customers?
+
+- Does the skin tone of a user affect their sleep score? If so, does it remain the same including other factors?
+
+- Who are our the non tradional customers?
+
+For the first two questions we wanted to explore the characteristics of customers such as sex, age, income and skin tone to see if there is difference between traditional and non-traditional. We want to know if the new line of products that's meant to be affordable be is actually attracting new customers or different kinds of people. Finally the last question will use available data particularly focusing on sleep data which be used to check the sleep duration and flag count of an individual, and see how it relates to their skin tone.
+
+## Analyzing the difference in customers between the new lines of fitness tracking wearable devices
+
+**Introduction**
+
+With the advent of the 2 new active and advance lines, this section will primarily focus on how the customer response has been in relation to the new product lines. We will delve into the multiple factors and characteristics of the customers such as their income, skin tone, geographical location and other important factors to determine how the customers of these new lines differ from the customers of the other lines of products. We will examine the differences and similarities of customers of different lines of product and examine if the new active and advance lines are attracting customers outside of the companies traditional customer base. This will help better understand the value that these more affordable lines have on the customer base and if its worth further pursuing. 
+ 
+ 
+**Terminology**
+
+Before continuing on with the report it is first important to define terminology that will be used further on in the report. As such, it is important to define what is meant by a traditional customer. In essence a traditional customer is a customer who has bought a device that is in the iDOL and Run line of products. As the company has asked us to submit an analyze of the new more affordable lines of products, those who purchase the more expensive lines of products are defined as traditional customers. Conversely, those customers who have bought a device from the new lines of products (Advance/Active) will be defined as non-traditional customer. 
+
+**Central Research Question**
+
+Using the data given to us by the company as well as census and third party data, we will aim to identity in this section to analyze the differences between traditional and non traditional customers and identify if the new line of devices is attracting new customers that differ outside the traditional customer base. Using these questions we will be able to gain a further insight on who the new customers are and if the new line of products are attracting new customers. 
+
+
+
+**Data Collection Process**
+
+Before providing appropriate analysis of with the data it is important to understand where the data used in the technical report was sourced from. The data that will be used in this report was sourced from three different locations. The first location of where the data comes from is the Mingar corporation itself, the company for the purposes of the report has provided us with information on the customers and devices. In addition, to be able to gain other extrapolated data on the customers of different types of devices, information was sourced from the 2016 national Canadian Census. The 2016 census was used as it is the most latest released census and thus we are able to use the most up to date information. We can use this data to understand the differences between the traditional and non traditional customers. Finally the last source of data, API web scraping was used from the URL https://fitnesstrackerinfohub.netlify.app/ to get specific data on the various devices in addition to the information soured from the company itself. While collecting data it is important to note that privacy of the company and customers was a top priority and all data was sourced ethically. 
+
+
+**Data Cleaning Process**
+
+In addition to understand where the data came from it is also important to know how the data was prepared for subsequent analysis. The first step was to collect the data from the aforementioned three sources. From then the data was all combined together primarily based of the customer information (i.e median income) and the device data. Then with one combined data set, new columns were added to make the data easier to work with. Examples of this include a new column of age of customer which was attained by date of birth and skin tone attained by emoji color of the customer. Furthermore, the data was checked for any duplicates and any missing key data points. Duplicate entries were deleted and any observation that contained missing data was removed. Finally, a new variable was added we segregated based of of being a traditional customer or non traditional customer based on their device line. 
+
+
+**Numerical Summaries**
+ 
+ Using numerical summaries we can analyze how are buyers of the newer and more affordable ‘Active’ and ‘Advance’ products different to our traditional customers and if the 2 lines are attracting customers outside of the traditional customer base. 
+ 
+ 
+```{r, include=FALSE}
+
+Customer_data_grouped_inc <- cust_dev4 %>%
+  dplyr::select(custType, hhld_median_inc) %>%
+  dplyr::group_by(custType)%>%
+  dplyr::summarize(
+  Count = n(),
+  Min = min(hhld_median_inc),
+  Median = median(hhld_median_inc),
+  Max = max(hhld_median_inc), 
+  Mean = round(mean(hhld_median_inc), 2),
+  Trimmean = round(mean(hhld_median_inc, trim = 0.1),2), 
+  Var = round(var(hhld_median_inc)),
+  Range = max(hhld_median_inc)-min(hhld_median_inc))
+
+Customer_data_grouped_inc
+```
+ 
+```{r, include=TRUE, echo=FALSE}
+knitr::kable(Customer_data_grouped_inc, caption = "The trimmed mean is trimmed by 10 percent")
+```
+ From table 1 we are able to analyze the income of both traditional and non traditional customers. As we see from the table, the min median and max values of both traditional and non traditional customers are equal, which means customers from a large income array are customers of both the cheaper line of products and the more expensive line of products. However, both the mean and trimmed mean show that on average those are non traditional customers have a lower median income compared to the traditional customers. This makes intuitive sense as traditional customers are purchasing the more expensive device and it makes sens that they have a greater median income. Lastly, we see that traditional customers have a greater variance and standard deviation.
+ 
+ 
+
+```{r, include=FALSE}
+
+cust_dev4
+
+Customer_data_grouped_age <- cust_dev4 %>%
+  dplyr::select(custType, age) %>%
+  group_by(custType)%>%
+  summarize(
+  Count = n(),
+  Min = min(age),
+  Median = median(age),
+  Max = max(age), 
+  IQR = quantile(age, c(.75))- quantile(age, c(.25)), 
+  Mean = round(mean(age), 2),
+  Trimmean = round(mean(age, trim = 0.1),2), 
+  Var = round(var(age)),
+  SD = round(sd(age),2), 
+  Range = max(age)-min(age))
+
+
+
+```
+```{r, include=TRUE, echo=FALSE}
+knitr::kable(Customer_data_grouped_age, caption = "The trimmed mean is trimmed by 10 percent")
+```
+From table 2 we are able to analyze the age of both traditional and non traditional customers. For both traditional and non traditional customers the ages range from 18 to 92, but we see that the median, mean and trimmed mean for traditional customers is slightly lower. Lastly, we can see that variance and standard deviation is much higher for non traditional customers. From this we can surmise that, traditional customers are slightly younger on average compared to non traditional customers and have a smaller spread among their ages. This makes intuitive sense as those who are younger are more likely to use the more expensive features leading the age average of traditional customers to be higher.  
+
+\newpage
+
+**Graphical Summaries**
+
+In addition to numerical summaries we are able to use graphical summaries to better understand both traditional customers and non traditional customers.
+
+(Graph_1)
+```{r, include=FALSE}
+
+grouped_costomer_data <- cust_dev4 %>%
+  dplyr::select(custType, skin_tone, sex) %>%
+  group_by(custType, skin_tone, sex) %>%
+  summarize(count = n())
+
+
+Final_grapgh <-grouped_costomer_data %>%
+ggplot(aes(x= skin_tone, y=count, fill=sex)) + geom_bar(stat="identity")+
+scale_x_discrete(guide = guide_axis(n.dodge=7))+
+ggtitle("Customer sex and skin tone (Sepreated by tradional and non traditional)") +
+xlab("Customer skin tones") +
+ylab("Count")+
+facet_grid(~custType)
+
+
+
+
+```
+
+```{r, include=TRUE, echo=FALSE}
+
+Final_grapgh
+
+
+
+```
+
+From graph_1 we are able to see the makeup of customer's sex and skin tone separated by if they are traditional or non traditional customers. From the table we can see that the customer base for both traditional and non traditional customers are both dominated by females compared to men and inter-sex individuals. Furthermore, as for skin tone of the customer base its apparent that all the skin tones for non traditional customers are more evenly situated compared to traditional customers where there is a noticeably higher amount of customers who are light and medium light skin toned compared to the other skin tones. As for non traditional customers there is a noticeably higher count for all skin tones aside from light skin tone individual.
+
+
+```{r, include=FALSE}
+
+grouped_costomer_data <- cust_dev4 %>%
+  dplyr::select(custType, skin_tone, sex) %>%
+  group_by(custType, skin_tone, sex) %>%
+  summarize(count = n())
+
+
+Final_grapgh <-grouped_costomer_data %>%
+ggplot(aes(x= skin_tone, y=count, fill=sex)) + geom_bar(stat="identity")+
+scale_x_discrete(guide = guide_axis(n.dodge=7))+
+ggtitle("Customer sex and skin tone (Sepreated by tradional and non traditional)") +
+xlab("Customer skin tones") +
+ylab("Count")+
+facet_grid(~custType)
+
+
+
+
+```
+
+**Methods**
+
+With our data cleaned and analyzed through numerical and graphical summaries 
+we can move onto using the data in models to analyze the underlying question of this report
+on how are buyers of the newer and more affordable ‘Active’ and ‘Advance’ products different to our traditional customers and if the 2 lines are attracting customers outside of the traditional customer base?
+
+In order to accomplish this we will be using a logistical generalized linear model. The model is the following:
+
+$$
+is\_tradional \sim Bernoulli(\mu_i)
+$$
+$$
+log( \frac{\mu_i}{1-\mu_i})  = \beta_1sex_i + \beta_2age_i + \beta_3income_i + \beta_1skintone_i  
+$$
+
+where:
+
+- $\mu_i$ : is the probability of being a traditional customer
+- log[$\mu_i$ / (1 - $\mu_i$)] : is a log odds
+- $\mu_i$ / (1 - $\mu_i$): is an odds
+- if $\mu_i \approx 0$ then $\mu_i \approx \mu_i / (1 - \mu_i)$
+
+The reason logistic generalized linear models were used has to primarily do with the fact that the response variable is if the customer is a traditional or non traditional customer (a binary value). In addition, it is assumed that the predictor variables of sex, age, income and skin tone are all independent. Using this logistic generalized linear model we will be able to analyze the differences between the traditional and non traditional customers. 
+
+
+```{r, include=FALSE}
+quantile(cust_dev4$hhld_median_inc)
+cust_dev4$hhld_median_incC <- cust_dev4$hhld_median_inc - 65829
+
+
+quantile(cust_dev4$age)
+cust_dev4$ageC <- cust_dev4$age - 47
+
+
+quantile(cust_dev5$hhld_median_inc)
+cust_dev5$hhld_median_incC <- cust_dev5$hhld_median_inc - 65829
+
+
+quantile(cust_dev5$age)
+cust_dev5$ageC <- cust_dev5$age - 47
+
+
+
+```
+
+Also, before moving onto results it is important to center our quantitative parameters of age and median income to make interpreting the coefficients more meaningful. Currently our intercept is log odds when age and median income is 0. To alleviate this, both parameter values were all subtracted from their median quantile values (age: 47 and hhld_median_inc = 65829). It is important to note that it does not change the relationship between the values. 
+
+Lastly, for the purposes of logistic regression, if the customer is a non traditional customer then the customer has been assigned the value of 1 and if the customer is a non traditional customer then the customer has been assigned the value of 0. This is die to the fact that we are able to interpret the results as an 'even occuring' if the customer is a non tradional customer.
+
+
+
+**Results**
+
+```{r, include=FALSE}
+TradCustModel<-glm(as.factor(custTypeNum) ~ (age) + (hhld_median_inc) + as.factor(skin_tone) + as.factor(sex), family = 'binomial',  data = cust_dev5)
+summary(TradCustModel)
+
+estimates <- format(exp(summary(TradCustModel)$coeff)[,1], 3)
+p_Vals <- summary(TradCustModel)$coeff[,4]
+ci <- format(exp(confint(TradCustModel)), 3)
+summary <- data.frame(estimates = as.numeric(estimates),
+                            'p values' = p_Vals,
+                            'lower bound' = as.numeric(ci [,1]),
+                            'upper bound' = as.numeric(ci [,2]))
+
+summary
+```
+
+
+```{r, include=TRUE, echo=FALSE}
+knitr::kable(summary, caption = "Results from the generalized linear model (converted from log odds)")
+
+```
+
+From table_3 we are able to compare the attributes between traditional customers and non traditional customers. As a reminder, when interpreting the results non traditional customers were assigned the value of 1 as to be given the "occurring event" interpretation in the model. As we can see from the summary table, the skin tone of the customers and sex of the customers had p values of greater than 0.05 and so we can not definitively conclude if these factors are statistically significant between traditional and non traditional customers. In addition, we found that household income and age were statistically significant with p values lower than 0.05. When we examine the coefficient estimate of age we see that it is 1.0050834 meaning that compared to traditional customers that non traditional customers seem to be generally older in age. In addition as for income the estimated coefficient was 0.9999807 meaning that those who are non traditional customers generally have lower median income. As for the age, with the dummy variable being female that inter-sex and males have a higher odds of being non traditional customers and as for skin tone we see that all other skin tones have a smaller odds of being a non traditional customer compared to people with dark skin. These results follow the data analysis in the data section. 
+
+
+**Conclusion**
+
+Using what we have learned from this analysis we are able to analyze how are buyers of the newer and more affordable ‘Active’ and ‘Advance’ products different to our traditional customers and if the 2 lines are attracting customers outside of the traditional customer base.
+
+Starting off with the differences between traditional customers and non traditional customers from the data analysis we see that starting off the data set used had a greater number of non traditional customers compared to traditional customers. Further, more we see that for both traditional customers and non traditional customers there were more females compared to males and inter-sex people. In addition we see that the traditional customers consists of more light and medium light skin people compared to non traditional customers. Also, we see from the numerical summaries we see that non traditional customers are generally older, live in more populated areas and have lower median incomes than traditional customers. Lastly, from our modeling we see that the statistically significant differences between their ages and incomes. This helps us understand if the non traditional customers are from outside the traditional customer base. As we see from the report findings, non traditional customers are generally outside of the regular customer base in terms of age and income levels. This makes sense as the new line was designed as a cheaper alternatives so it follows those we are in the non traditional customer base would be older and have less median income. To conclude, in terms of who are these new customers we know its statistically significantly those who have lower median income and are generally older. 
+
+
+## Investigation: Worse sleep scores for darker skin tones
+
+For this analysis we were not given a clear variable on sleep score and so we calculated sleep score based on the flag count of an individual. Furthermore, since Mingar isn't authorized to extract information about their users' individual ethnicities, we instead received the variable called the "emoji modifier", which represents the skin tone of the emojis they use or react feature of the user. We will use this to conduct some of our exploratory data analysis and statistical modeling for this section to investigate if there exists any potential racial biases.
+
+\newpage
+
+**Methods**
+
+(Graph_2)
+
+
+```{r, include=TRUE, echo=FALSE}
+cust_sleep3 %>%
+  ggplot(aes(x = flags)) +
+  geom_histogram(bins=25, color="black", fill="white") +
+  facet_wrap(~skin_tone) +
+  scale_color_brewer(palette = "Set2")
+```
+
+In the histogram shown in Graph 2 above we can see that there exists quite a bit of evidence that for lighter skin tones having less flag counts since their graphs tend to be more dense around 0 and is right skewed. Darker skin tones on the other hand seem to have a greater overall mean and with greater variance in their densities, which seem to indicate that these groups have significantly more flags on average in general compared to the lighter skin toned groups.
+
+The research question for section will be to conduct an analysis on whether or not the skin tone of a user does in fact have an affect on their respective sleep scores. We will explore some potential variables that may have a have some relationship with the amount of flags the device gives, and then we will produce a model that will hopefully best explain this issue.
+
+Out of the data gathered, there was a total of 20622 device users with their own unique ID. (We chose to exclude the emojis that identified yellow to focus more and make a better comparison within each skin tone group).
+Mingar has kindly provided us with their customer data which kept a record of each of the 20622 users including the date, sleep duration in minutes, and the amount of flags during their sleep session. Since Mingar wants us to discuss how sleep score is affected, we will instead use the flag variable as flags give us information about the device's behaviour. The more flags occurring on a sleep session will indicate a worse performance of the device, which would in turn directly imply a worse sleep score reliability. 
+
+
+**Data description & wrangling**
+
+Here are the following changes we made to prepare for this research question:
+
+* Used the customer device data to create a new column variable called skin tone, which will be the response variable in our modeling and it includes 6 skin tone types ranging from light to dark
+* Wanted to know whether the device line was "Active" or "Advance" and created a new column variable called "Active_Advance", which indicates if the device line is Active/Advance or other types
+* Joined the customer device data with the customer sleep data with respect to individual customer ID. 
+* Removed customers with NA values in the sex column variable
+* Removed the skin tone type "yellow" in skin tone variable to give a better comparison strictly between actual skin tone types
+
+**Purpose/Statistical methods**
+
+We decided to use a Poisson regression generalized linear model to determine our response variable to compare the differences between the flag count and skin tone.
+To use this model we would need to check if our data satisfies the assumptions for a Poisson model. First we checked if the response follows a Poisson response which clearly does since flags is a discrete value that take whole values starting from zero. We can also assume independence since none of the observations have any direct influence over each other and so we can assume that flag counts are independent to one another. Another important assumption we needed to check is if the mean is equal to the variance. We see that in the table _, the observed variance for flag is larger than the observed mean for each skin tone type. Therefore we have some over-dispersion and instead of using a traditional Poisson model, we will instead be using a negative binomial regression model to loosen this assumption. Finally for the linearity assumption, with the fact that the predictors in this analysis are not continuous variables, we can say that the assumption of linearity in log(lambda) is not something worth considering, but could still be a potential problem when drawing conclusions from the model.
+
+(Table_4)
+
+
+| skin tone       | Mean   | Variance  |
+|-----------------|--------|-----------|
+|  light          | 1.15   |  1.68     |
+|  medium         | 3.65   |  4.98     |
+|  medium light   | 2.51   |  3.61     |
+|  medium dark    | 7.44   |  10.17    |
+|  dark           | 11.80  |  16.07    |
+
+As we can see from table 4, both the mean and variance increase as the shade of skin tone gets darker. 
+
+This negative binomial model can also be considered as a Poisson model that follows a Gamma distribution, where $\lambda$ is random. It has the following mathematical expression:
+
+$$log(\lambda/sleep duration) = \beta_0 + \beta_1*(skin tone) + \beta_2*(ActiveAdvance) + \beta_3*(sex)$$
+
+we can equivalently write this as,
+
+$$log(\lambda) = \beta_0 + \beta_1*(skin tone) + \beta_2*(ActiveAdvance) + \beta_3*(sex) + log(sleep duration)$$
+
+where $\lambda$ is the mean count of flags during a sleep session and sleep duration is the total amount in minutes of a sleep session. Active Advance represents if it is a Active/Advance or other, and finally sex represents if the person is Male, Female, or Inter-sex. The offset term in this model is the log of sleep duration and we chose this to be the offset because every customer has a different amount of flags for different amounts of sleep duration. For example, we can have a customer who sleeps 10 hours and gets 4 flags, while another customer could sleep for 5 hours and get no flags in their session. 
+
+For our model selection process, we started the negative binomial model off with only one predictor variable skin tone to see if it produced anything of statistical significance. We found that for every skin tone it produced a significant p-value of less than 0.05. Next we wanted to see if non-traditional device lines have any effect and so we added the "Active or Advance" variable in the model to see if there is a difference in flag counts for these traditional and non-traditional lines. We then used a likelihood ratio test to compare the two models and the model with the two predictors produced a higher p-value, meaning that we should add this extra term. We also wanted to see if the sex of a customer has an effect as perhaps there could exist biases in sexes, so we performed another likelihood test with another additional sex term added. The likelihood ratio test showed that we should accept this model with the additional term and so we chose to go with a model with three predictor variables. These variables are skin tone, active or advance, and sex.
+
+**Results**
+
+(Table_5): Results for model
+
+| skin tone           |Estimate| p-value      | Upper Bound | Lower Bound |
+|---------------------|--------|--------------|-------------|-------------|
+|intercept            |12.06   |$1.3210^{-9}$ |12.146       |11.974       |
+|skin_tonelight       |0.098   |$3.9710^{-6}$ |0.099        |0.096        |
+|skin_tonemedium      |0.309   |$2.3310^{-5}$ |0.313        |0.306        |
+|skin_tonemedium-light|0.212   |$1.2110^{-4}$ |0.214        |0.210        |
+|skin_tonemedium-dark |0.628   |$6.7210^{-7}$ |0.634        |0.623        |
+|Active_Advanceothers |1.020   |$3.2010^{-8}$ |1.027        |1.013        |
+|  sexintersex        |0.939   |$4.6710^{-4}$ |0.972        |0.906        |
+|  sexMale            |0.933   |$1.8710^{-7}$ |0.940        |0.926        |
+
+In table 5 shown above, we can see that all estimates exhibit a p-value far less than 0.05 which proves that all of them are indeed statistically significant. We interpret these estimates in relation to dark skin tone females who use non-traditional device lines (Active or Advanced). For example, the skin tone medium-dark has an intercept of 0.628 and we can interpret this by saying we expect medium-dark skinned customers to have less flags than dark skin tones by about 0.628 times, assuming they are also female and use a non-traditional device line. We can say the same interpretation for the rest of the skin tones, but notice how the value decreases as the skin tone gets lighter. We see that medium, medium-light, and light skins tone customers are 0.309, 0.212, 0.098 times of dark skin tones respectively, which clearly shows there exists bias here. When we strictly compare light to dark then dark skinned customers experience a 90% difference in flag counts more than light skinned customers. 
+
+As for the other estimates, there isn't much of a difference as their values are approximately or at least close to 1. We also see in figure _, that the proportion of flag counts does not defer too much from each other between traditional and non-traditional device lines. Therefore for other cases where we perhaps have a Male customer with a traditional device line, there won't be much of a difference from our results explained earlier and the skin tone ratio remains approximately the same.
+
+(Graph_3): flags for Active_Advance and other customers
+
+```{r, include=FALSE}
+flag_count_graph <- cust_sleep3 %>% 
+  group_by(Active_Advance, skin_tone) %>% 
+  summarise(Flags = n_distinct(flags)) %>% 
+  ungroup() %>% 
+  group_by(Active_Advance) %>% 
+  mutate(tot = sum(Flags)) %>% 
+  ggplot(aes(x = Active_Advance, y = Flags, fill = skin_tone)) +
+  geom_bar(stat = "identity") 
+```
+```{r, include=TRUE, echo=FALSE}
+flag_count_graph 
+```
+In Graph_3 we see that for both active_advace and others, that those with dark skin tone have the highest number of flags and those with light skin tones have the lowest amount. 
+
+```{r, include=FALSE}
+
+# Poisson model: negative binomial model
+mod1 <- glm.nb(flags ~ skin_tone, offset(log(duration)), data = cust_sleep3)
+summary(mod1)$coeff
+
+mod2 <- MASS::glm.nb(flags ~ skin_tone + Active_Advance, offset(log(duration)), data = cust_sleep3)
+mod3 <- glm.nb(flags ~ skin_tone + Active_Advance + sex, offset(log(duration)), data = cust_sleep3)
+
+lmtest::lrtest(mod1,mod2)
+lmtest::lrtest(mod2,mod3)
+
+
+summary(mod1)
+summary(mod2)
+summary(mod3)$coeff
+
+```
+
+
+
+**Conclusion**
+
+For the skin tone investigation, we quickly explored through graphs and summary statistics that darker skin tones tend have a higher flag count on average which led us to believe they have overall worse sleep scores. Consequently, the results from our model show that skin tone does have a great affect on flag count and also provides us with each skin tone estimate having considerable differences when compare light to dark as darker customers are a lot more likely to accumulate flags throughout their sleep sessions which in turn affect their sleep scores. We also found that these racial biases stay the same when we consider the person's sex and their device type. 
+
+
+
+## Discussion
+
+Over the course of this report we were able to go into a through investigation of traditional and non traditional customers. From our analysis we found that non traditional customers and traditional statistically contrast in their ages and median income. We found that non traditional customers generally have lower median income levels and are generally older than traditional customers. We also found that sex and skin tone were not statistically signifant difference between traditional and non traditional customers. From our analysis of skin tones we found that those have dark skin tones tend to have higher flag count which lead us to believe they have lower sleep scores compared to other people with other skin tones.
+
+
+### Strengths and limitations
+
+**Limitations**
+
+A limitation we had for the skin tone investigation was that we were not completely sure if the linearity assumption was satisfied. All the predictor variables in our model were categorical and thus it is not continuous. We would advise to use this model with caution as we cannot make any definite conclusions, but it may still be used to provide evidence.
+
+For future analysis we would consider adding other predictor variables to the model to explore how racial biases might have changed in other scenarios with other factors involved, but we wanted to focus solely on studying on how skin tone effects on sleep score and so we made the model as simple as possible.
+
+Another limitation we found was that there was an uneven number of traditional and non traditional customers leading to an unbalanced experimental design. This imbalance leads to believe there is potential for bias in our analysis. In addition, it was assumed that the predictors for the model were independent. Lastly, we assumed the skin tone based of the customers emoji preference which led to us deleting observation of those who used yellow deafult emoji as we were not able to ascertain their skin tone. 
+
+**Strength**
+
+One strength we had was that we were able to get a diverse amount of data which lead to create a diverse and expansive numerical summaries, graphical summaries and model. This lead our data to be more representative of the real world data. In addition, another one of the strengths is that data data we had was well organized and made modeling and summaries detailed. This allowed are models to very precisely target the research questions. 
+
+
+\newpage
+# Consultant information
+## Consultant profiles
+
+*Complete this section with a brief bio for each member of your group. If you are completing the project individually, you only need to complete one for yourself. In that case, change the title of this section to 'Consultant profile' instead. Examples below. This section is only marked for completeness, clarity and professionalism, not 'truth' so you can write it as if we're a few years in the future. Put your current degree in as completed and/or add your first choice grad school program, whatever you like. What skills related skills would you most like to highlight? What job title do you want?*
+
+**Statsy McStatsstats**. Statsy is a senior consultant with Eminence Analytics. She specializes in data visualization. Statsy earned her Bachelor of Science, Specialist in Statistics Methods and Practice, from the University of Toronto in 2023.
+
+**Datana Scatterplot**. Datana is a junior consultant with Eminence Analytics. They specialize in reproducible analysis and statistical communication. Datana earned their Bachelor of Science, Majoring in Computer Science and Statistics from the University of Toronto in 2024.
+
+## Code of ethical conduct
+
+_This section should be fairly short, no more than half a page. Assume a general audience, much like your executive summary._
+
+* _Make at least three relevant statements about your company's approach to ethical statistical consulting. These should be appropriately in line with professional conduct advice like the (Statistical Society of Canada Code of Conduct)[https://ssc.ca/sites/default/files/data/Members/public/Accreditation/ethics_e.pdf] or the (Ethical Guidelines for Statistical Practice from the American Statistical Society)[https://www.amstat.org/ASA/Your-Career/Ethical-Guidelines-for-Statistical-Practice.aspx]. For example, "the customer is always right" ISN'T the type of thing an ethical statistical consultant would include._
+*	_Be very careful not to just copy and paste from these other documents! Put things in your own words._
+
+
+\newpage
+# References
+
+
+**Data Sources**
+
+Fitness Tracker Info Hub. Retrieved from https://fitnesstrackerinfohub.netlify.app/ on 09/04/2022.
+
+Census Canada Postal Code Conversion File: 2016 Census Geography, August 2021 Postal Codes. Retrieved from https://mdl.library.utoronto.ca/collections/numeric-data/census-canada/postal-code-conversion-file/2016 on 09/04/2022.
+
+Canadian Income Census Data. Retrieved from https://censusmapper.ca/ on 09/04/2022.
+
+**Packages/Libraries**
+
+lme4 package: Bates D, Mächler M, Bolker B, Walker S (2015). “Fitting Linear Mixed-Effects Models Using lme4.” Journal of Statistical Software, 67(1), 1–48. doi: 10.18637/jss.v067.i01.
+
+rvest package: Easily Harvest (Scrape) Web Pages (2021). Retrieved from https://rvest.tidyverse.org/, https://github.com/tidyverse/rvest
+
+polite package: Be Nice on the Web (2019). Retrieved from https://github.com/dmi3kno/polite
+
+lubridate package: Grolemund G, Wickham H (2011). “Dates and Times Made Easy with lubridate.” Journal of Statistical Software, 40(3), 1–25. https://www.jstatsoft.org/v40/i03/.
+
+lmtest package: Zeileis A, Hothorn T (2002). “Diagnostic Checking in Regression Relationships.” R News, 2(3), 7–10. https://cran.r-project.org/doc/Rnews/.
+
+MASS package: Venables WN, Ripley BD (2002). Modern Applied Statistics with S, Fourth edition. Springer, New York. ISBN 0-387-95457-0, https://www.stats.ox.ac.uk/pub/MASS4/. 
+
+**Resources**
+
+Full Emoji Modifier Sequences. Retrieved from https://unicode.org/emoji/charts/full-emoji-modifiers.html on 09/04/2022.
+
+\newpage
+# Appendix
+
+_These appendices should outline in more detail the steps taken to access the following datasets. They should NOT include code, but should briefly describe the steps and important considerations. I.e., show that you understand what needs to be considered when web scraping, protecting licensed data, etc._
+
+## Web scraping industry data on fitness tracker devices
+
+## Accessing Census data on median household income
+
+## Accessing postcode conversion files
+
+
+__Final advice: KNIT EARLY AND OFTEN!__
